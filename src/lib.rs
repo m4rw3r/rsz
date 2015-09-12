@@ -1,39 +1,11 @@
-/// For a type M<A> which can produce types of type M<B> this definition holds:
-/// 
-/// ```
-/// use hkt::HKT;
-/// 
-/// struct M<T> { t: T };
-/// 
-/// impl<A, B> HKT<B> for M<A> {
-///     type Inner  = A;
-///     type Result = M<B>;
-/// }
-/// ```
-pub trait HKT<Output> {
-    type Inner;
-    type Result;
-}
+mod hkt;
+mod monad;
+mod functor;
+mod impls;
 
-// TODO: How to enforce that F: Fn*(Self::Inner) -> T?
-//       Seems to require impl-specialization
-pub trait Functor<T, F>: HKT<T> {
-    fn map(self, F) -> Self::Result;
-}
-
-// Unit needs a separate trait since Monad and Applicative require Fn generics which cannot
-// be inferred when calling unit
-pub trait Unit<T>: HKT<T> {
-    fn unit(Self::Inner) -> Self
-      where Self: HKT<T, Inner=T>;
-}
-
-/// The Monad trait, specifying ``bind``.
-// TODO: How to enforce that F: Fn*(Self::Inner) -> Self::Result?
-//       Seems to require impl-specialization
-pub trait Monad<T, F>: Unit<T> {
-    fn bind(self, F) -> Self::Result;
-}
+pub use hkt::HKT;
+pub use monad::{Monad, Unit};
+pub use functor::Functor;
 
 /*
 pub fn map<T, M: Functor<T, F>, F>(m: M, f: F) -> M::Result {
@@ -75,7 +47,7 @@ mod test {
 
         impl<T, U> Unit<U> for A<T> {
             fn unit(t: Self::Inner) -> Self
-              where Self: HKT<T, Inner=T> {
+              where Self: HKT<T> {
                 A { t: t }
             }
         }
