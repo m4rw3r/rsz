@@ -38,6 +38,48 @@ mod test {
     use ::monad::{Monad, Unit};
 
     #[test]
+    fn left_identity() {
+        fn f(i: u32) -> Option<i32> {
+            Unit::unit((i as i32) - 1)
+        }
+
+        // return a >>= f
+        let lhs = Monad::bind(Option::unit(1), f);
+        // f a
+        let rhs = f(1);
+
+        assert_eq!(lhs, rhs);
+    }
+
+    #[test]
+    fn right_identity() {
+        // m >>= return
+        let lhs = Monad::bind(Some(1), Unit::unit);
+        // m
+        let rhs = Some(1);
+
+        assert_eq!(lhs, rhs);
+    }
+
+    #[test]
+    fn associativity() {
+         fn f(num: u32) -> Option<u64> {
+            Unit::unit((num + 1) as u64)
+        }
+
+        fn g(num: u64) -> Option<u64> {
+            Unit::unit(num * 2)
+        }
+
+        // (m >>= f) >>= g
+        let lhs = Monad::bind(Monad::bind(Some(2), f), g);
+        // m >>= (\x -> f x >> g)
+        let rhs = Monad::bind(Some(2), |x| Monad::bind(f(x), g));
+
+        assert_eq!(lhs, rhs);
+    }
+
+    #[test]
     fn map() {
         let mut run_a = false;
         let mut run_b = false;
