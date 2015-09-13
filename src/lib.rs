@@ -45,9 +45,10 @@ mod test {
             }
         }
 
-        impl<T, U> Unit<U> for A<T> {
-            fn unit(t: Self::Inner) -> Self
-              where Self: HKT<T> {
+        impl<T> Unit for A<T> {
+            type Inner = T;
+
+            fn unit(t: T) -> Self {
                 A { t: t }
             }
         }

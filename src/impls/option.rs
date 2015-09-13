@@ -14,9 +14,10 @@ impl<T, U, F> Functor<U, F> for Option<T>
     }
 }
 
-impl<T, U> Unit<U> for Option<T> {
-    fn unit(t: Self::Inner) -> Self
-      where Self: HKT<T, Inner=T> {
+impl<T> Unit for Option<T> {
+    type Inner = T;
+
+    fn unit(t: Self::Inner) -> Self {
         Some(t)
     }
 }
