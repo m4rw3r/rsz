@@ -1,30 +1,25 @@
-use ::hkt::HKT;
-use ::functor::Functor;
-use ::monad::{Monad, Unit};
-
-impl<T, U, E> HKT<U> for Result<T, E> {
-    type Inner  = T;
-    type Result = Result<U, E>;
-}
-
-impl<T, U, E, F> Functor<U, F> for Result<T, E>
-  where F: FnOnce(T) -> U {
-    fn map(self, f: F) -> Self::Result {
-        self.map(f)
-    }
-}
+use ::{FunctorOnce, HKT, MonadOnce, Unit};
 
 impl<T, E> Unit for Result<T, E> {
     type Inner = T;
 
-    fn unit(t: Self::Inner) -> Self {
-        Ok(t)
+    fn unit(t: Self::Inner) -> Self { Ok(t) }
+}
+
+impl<T, U, E> HKT<U> for Result<T, E> {
+    type Result = Result<U, E>;
+}
+
+impl<T, U, E> FunctorOnce<U> for Result<T, E> {
+    fn map<F>(self, f: F) -> Self::Result
+      where F: FnOnce(T) -> U {
+        self.map(f)
     }
 }
 
-impl<T, U, E, F> Monad<U, F> for Result<T, E>
-  where F: FnOnce(T) -> Result<U, E> {
-    fn bind(self, f: F) -> Self::Result {
+impl<T, U, E> MonadOnce<U> for Result<T, E> {
+    fn bind<F>(self, f: F) -> Self::Result
+      where F: FnOnce(T) -> Result<U, E> {
         match self {
             Ok(t)  => f(t),
             Err(e) => Err(e),
@@ -34,8 +29,7 @@ impl<T, U, E, F> Monad<U, F> for Result<T, E>
 
 #[cfg(test)]
 mod test {
-    use ::functor::Functor;
-    use ::monad::{Monad, Unit};
+    use ::{Monad, Unit};
 
     #[test]
     fn left_identity() {
@@ -78,6 +72,11 @@ mod test {
 
         assert_eq!(lhs, rhs);
     }
+}
+
+#[cfg(test)]
+mod test_mut {
+    use {Unit, FunctorMut, MonadMut};
 
     #[test]
     fn map() {
@@ -112,12 +111,12 @@ mod test {
         let a: Result<_, ()> = Ok(1i32);
         let b: Result<i32, _> = Err(());
 
-        let r_a = Functor::map(a, |i| {
+        let r_a = FunctorMut::map(a, |i| {
             run_a = true;
 
             i + 1
         });
-        let r_b = Functor::map(b, |i| {
+        let r_b = FunctorMut::map(b, |i| {
             run_b = true;
 
             i + 2
@@ -171,12 +170,12 @@ mod test {
         let a: Result<_, ()>  = Unit::unit(1i32);
         let b: Result<i32, _> = Err(());
 
-        let r_a = Monad::bind(a, |j| {
+        let r_a = MonadMut::bind(a, |j| {
             run_a = true;
 
             Unit::unit(j + 1)
         });
-        let r_b = Monad::bind(b, |j| {
+        let r_b = MonadMut::bind(b, |j| {
             run_b = true;
 
             Unit::unit(j + 2)

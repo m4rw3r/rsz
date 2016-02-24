@@ -1,30 +1,25 @@
-use ::hkt::HKT;
-use ::functor::Functor;
-use ::monad::{Monad, Unit};
-
-impl<T, U> HKT<U> for Option<T> {
-    type Inner  = T;
-    type Result = Option<U>;
-}
-
-impl<T, U, F> Functor<U, F> for Option<T>
-  where F: FnOnce(T) -> U {
-    fn map(self, f: F) -> Self::Result {
-        self.map(f)
-    }
-}
+use ::{FunctorOnce, HKT, MonadOnce, Unit};
 
 impl<T> Unit for Option<T> {
     type Inner = T;
 
-    fn unit(t: Self::Inner) -> Self {
-        Some(t)
+    fn unit(t: Self::Inner) -> Self { Some(t) }
+}
+
+impl<T, U> HKT<U> for Option<T> {
+    type Result = Option<U>;
+}
+
+impl<T, U> FunctorOnce<U> for Option<T> {
+    fn map<F>(self, f: F) -> Self::Result
+      where F: FnOnce(T) -> U {
+        self.map(f)
     }
 }
 
-impl<T, U, F> Monad<U, F> for Option<T>
-  where F: FnOnce(T) -> Option<U> {
-    fn bind(self, f: F) -> Self::Result {
+impl<T, U> MonadOnce<U> for Option<T> {
+    fn bind<F>(self, f: F) -> Self::Result
+      where F: FnOnce(T) -> Option<U> {
         match self {
             Some(t) => f(t),
             None    => None,
@@ -34,8 +29,7 @@ impl<T, U, F> Monad<U, F> for Option<T>
 
 #[cfg(test)]
 mod test {
-    use ::functor::Functor;
-    use ::monad::{Monad, Unit};
+    use ::{FunctorOnce, Monad, Unit};
 
     #[test]
     fn left_identity() {
@@ -112,12 +106,12 @@ mod test {
         let a = Some(1i32);
         let b: Option<i32> = None;
 
-        let r_a = Functor::map(a, |i| {
+        let r_a = FunctorOnce::map(a, |i| {
             run_a = true;
 
             i + 1
         });
-        let r_b = Functor::map(b, |i| {
+        let r_b = FunctorOnce::map(b, |i| {
             run_b = true;
 
             i + 2
@@ -137,6 +131,11 @@ mod test {
 
         assert_eq!(r, Some(123i32));
     }
+}
+
+#[cfg(test)]
+mod test_mut {
+    use {Unit, MonadMut};
 
     #[test]
     fn bind() {
@@ -166,6 +165,8 @@ mod test {
 
     #[test]
     fn bind_trait() {
+        use MonadMut;
+
         let mut run_a = false;
         let mut run_b = false;
 
@@ -173,12 +174,12 @@ mod test {
         let a: Option<_>   = Unit::unit(1i32);
         let b: Option<i32> = None;
 
-        let r_a = Monad::bind(a, |j| {
+        let r_a = MonadMut::bind(a, |j| {
             run_a = true;
 
             Unit::unit(j + 1)
         });
-        let r_b = Monad::bind(b, |j| {
+        let r_b = MonadMut::bind(b, |j| {
             run_b = true;
 
             Unit::unit(j + 2)
